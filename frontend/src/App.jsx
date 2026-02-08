@@ -9,7 +9,6 @@ import NavBar from "./Components/NavBar";
 import Footer from "./Components/Footer";
 import React, { useState } from "react";
 
-
 function App() {
   const [isDark, setDark] = useState(false);
 

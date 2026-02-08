@@ -3,9 +3,18 @@ import path, {dirname, join} from 'path'
 import { fileURLToPath } from 'url'
 import authRoutes from './routes/authRoutes.js'
 import appointmentRoutes from './routes/appointmentRoutes.js'
+import cors from "cors";
+
+
+//Allows communication between frontend client and database server,
+//  without flagging CORS communication issues in the web browser
+const corsOptions = {
+    origin: ["http://localhost:3000"],
+};
 
 
 const app = express()
+app.use(cors(corsOptions))
 const PORT = process.env.PORT || 5003
 
 // Get the file path from URL of currModule
@@ -21,6 +30,8 @@ app.use(express.static(path.join(__dirname, '../public')))
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'))
 })
+
+
 
 //ROUTES
 app.use('/auth', authRoutes)

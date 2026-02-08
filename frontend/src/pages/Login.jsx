@@ -4,6 +4,13 @@ import {yupResolver} from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import { useState } from "react"
 
+// ===== GLOBAL STATE =====
+let token = localStorage.getItem('token') || null
+let isAuthenticating = false
+let isRegistration = false
+
+const apiBase = 'http://localhost:5003/'
+
 
 function Login(){
 
@@ -30,6 +37,19 @@ function Login(){
 
     const onSubmit = (data) => {
         console.log(isLogin? "Logging in: " : "Registering: ", data)
+        //Login call
+        //authenticate()
+        //Register Call
+        if(isLogin)
+        {
+            isRegistration = false
+        }
+        else
+        {
+            isRegistration = true
+        }
+        authenticate(data.email, data.password)
+
         reset()
     };
 
@@ -93,5 +113,56 @@ function Login(){
         </div>
     );
 }
+
+
+async function authenticate(email, password) {
+    const emailVal = email
+    const passVal = password
+    console.log(email, password)
+
+    if (
+        isAuthenticating ||
+        !emailVal ||
+        !passVal ||
+        passVal.length < 6
+    )
+
+    isAuthenticating = true
+
+    try {
+        let res
+        if (isRegistration) {
+            // register
+            res = await fetch(apiBase + 'auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: emailVal, password: passVal })
+            })
+        } else {
+            // login
+            res = await fetch(apiBase + 'auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: emailVal, password: passVal })
+            })
+        }
+
+        const data = await res.json().catch(() => ({}))
+
+        if (!res.ok || !data.token) {
+            throw new Error(data.message || 'Failed to authenticate.')
+        }
+
+        token = data.token
+        localStorage.setItem('token', token)
+
+    } catch (err) {
+
+    } finally {
+
+    }
+}
+
+
 
 export default Login;
