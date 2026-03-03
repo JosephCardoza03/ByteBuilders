@@ -62,4 +62,29 @@ router.post('/login', async(req, res) => {
         res.sendStatus(503)
     }
 })
+
+//Reset password request
+router.post('/reset', async(req, res) => {
+
+    const {username} = req.body
+
+    try{
+        const user = await prisma.user.findUnique({
+            where: {
+                username: username
+            }
+        })
+
+        if(!user) {return res.sendStatus(404).send({message: "User not Found"})}
+        else
+        {
+            return res.sendStatus(201)
+        }
+
+    } catch (err) {
+        console.log(err.message)
+        res.sendStatus(503)
+    }
+})
+
 export default router

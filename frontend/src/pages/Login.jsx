@@ -8,12 +8,14 @@ import { useState } from "react"
 let token = localStorage.getItem('token') || null
 let isAuthenticating = false
 let isLogin
+let resetPassword = false
 
 const apiBase = 'http://localhost:5003/'
 
 
 function Login(){
 
+    const [resetPassword, setResetPassword] = useState(true);
 
     const [isLogin, setIsLogin] = useState(true);
 
@@ -29,18 +31,37 @@ function Login(){
         confirmPassword: yup.string().oneOf([yup.ref("password"),null], "Passwords Don't Match").required("Re-enter Password")
         });
 
-    const schema = isLogin ? loginSchema : registerSchema;
+    const resetSchema = yup.object().shape({
+        email: yup.string().email("Invalid format").required("Email required")
+    });
+
+    const schema = resetPassword ? resetSchema : (isLogin ? loginSchema : registerSchema);
 
     const {register, handleSubmit, reset, formState: {errors}} = useForm({
         resolver: yupResolver(schema),
     });
 
+
+
     //When submitting login or registration data, we (currently) output it to the console log for debugging, and then run an authentication call with the database server
     const onSubmit = (data) => {
-        console.log(isLogin? "Logging in: " : "Registering: ", data)
+        //TODO: Remove this before deployment
+
 
         //calls to authenticate, to speak to the authentication middleware, to check against current entries in the database.
-        authenticate(data.email, data.password)
+        if(!resetPassword)
+        {
+            console.log(isLogin? "Logging in: " : "Registering: ", data)
+            authenticate(data.email, data.password)
+        }
+        else
+        {
+            console.log("Resetting password",data.email)
+            forgotPassword(data.email)
+        }
+
+
+
 
         //TODO: Add redirect functionality, after authenticated login or registration.
 
@@ -51,7 +72,7 @@ function Login(){
         <div className="login">
             <h1>{isLogin ? "Welcome Back!" : "Welcome!"}</h1>
             <div className="login-container">
-                <h2>{isLogin ? "Login" : "Register"}</h2>
+                <h2>{resetPassword ? "Reset Password" : (isLogin ? "Login" : "Register")}</h2>
                 
                 <form onSubmit={handleSubmit(onSubmit)} className="login-form">
                     <div className="form-group">
@@ -59,23 +80,25 @@ function Login(){
                         <input type="text" placeholder="ex@hotmail.com" {...register("email")}
                             className="form-input"/>
                         <p className="error">{errors.email?.message}</p>
-
                     </div>
 
-                    <div className="form-group">
-                        <div className="password-field">
+                    {/* Hide both password input forms when resetting password, since we only need the email */}
+                    {!resetPassword && (
+                        <div className="form-group">
+                            <div className="password-field">
                             <label htmlFor="password" className="form-label">Password</label>
-                            <input type="password" 
+                            <input type="password"
                                 placeholder="******" {...register("password")}
-                                className="form-input"
-                            />
+                                className="form-input"/>
+                            </div>
+
+                            <p className="error">{errors.password?.message}</p>
                         </div>
-                        <p className="error">{errors.password?.message}</p>
-                        
-                    </div>
+                    )}
+
                     
 
-                    {!isLogin && (
+                    {!isLogin && !resetPassword && (
                         <div className="form-group">
                             <label htmlFor="confirmPassword" className="form-label">Confirm password</label>
                             <input type="password" 
@@ -87,15 +110,35 @@ function Login(){
                     )}
                      
                     <button type="submit" className="submit-btn">
-                        {isLogin ? "Login":"Register"}
+                        {resetPassword ? "Reset" : (isLogin ? "Login":"Register")}
                     </button>
+
                     
                 </form>
+
+                {/* Only displays the forgot password button while on the "login" page */}
+                {!resetPassword && isLogin && (
+                    <p className="switch-txt">
+                        {"Forgot your password?"}
+                        <button onClick={()=> {
+                            //TODO: Make this prettier, and fit into the UI better :)
+
+                            setIsLogin(false);
+                            setResetPassword(true);
+                        }}
+                        type="Forgot Password" className="switch-btn">
+                        {"Forgot Password"}
+                        </button>
+                    </p>
+                )}
+
 
                 <p className="switch-txt">
                     {isLogin ? "Don't have an account?": "Already have an account?"}
                     <button onClick={()=> {
                         setIsLogin(!isLogin);
+                        //disables the "reset password" formatting when switching to login or register
+                        setResetPassword(false);
                         reset();
                     }} className="switch-btn">
                         {isLogin ? "Register": "Login"}
@@ -108,8 +151,52 @@ function Login(){
     );
 }
 
+async function forgotPassword(emailVal)
+{
+    //Debugging
+    console.log(emailVal)
+
+    // https://www.geeksforgeeks.org/mern/forgot-reset-password-feature-with-react-and-node-js/
+
+
+    //TODO: Add nodemailer, so that we can send the user a reset password link
+
+    //Onsubmit, verify that the user email exists.
+    console.log("Authenticating user email with database");
+    let res
+    try {
+
+        res = await fetch(apiBase + 'auth/reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: emailVal})
+        })
+
+
+        if(res.ok)
+        {
+            //If Yes, send user a password reset link, or code.
+            console.log("Authenticated user email");
+            //TOOD: Add Password reset email code here
+        }
+        else
+        {
+            //If No, do nothing.
+            console.log("User does not exist")
+        }
+    } catch(err) {
+        console.log(err.message)
+        res.sendStatus(503)
+    }
+
+    //Display a message either way stating something like "If a user account with this email exists, a password reset link has been sent."
+
+
+}
+
 
 async function authenticate(emailVal, passVal) {
+    //TODO: Remove this before deployment
     console.log(emailVal, passVal)
 
     //TODO: Make sure that passVal.length is consistent with the password length for the input box on the frontend
