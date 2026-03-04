@@ -2,8 +2,53 @@ import express from 'express'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import prisma from '../prismaClient.js'
-
+import { google } from 'googleapis'
+import crypto from "crypto"
+import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
 const router = express.Router()
+
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+require("dotenv").config();
+
+let authToken;
+
+const oauth2Client = new google.auth.OAuth2(
+    process.env.CLIENT_ID,
+    process.env.SECRET_ID,
+    process.env.REDIRECT
+)
+
+router.get('/login', (req, res) => {
+    const url = oauth2Client.generateAuthUrl({
+        access_type: 'offline',
+        scope: ['https://www.googleapis.com/auth/calendar https://mail.google.com/']
+    })
+    res.redirect(url)
+})
+
+// /appointments/redirect
+router.get('/redirect', async (req, res) => {
+    const code = req.query.code
+
+    if (!code) {
+        return res.status(400).send('No ?code provided from Google')
+    }
+
+    try {
+        const { tokens } = await oauth2Client.getToken(code)
+        oauth2Client.setCredentials(tokens)
+        authtoken = tokens
+        tokensSet = true
+        console.log('Google Calendar OAuth tokens set.')
+        res.redirect('/')
+    } catch (err) {
+        console.error('Error exchanging code for token:', err)
+        res.status(500).send('Failed to authorize Google Calendar.')
+    }
+})
+
 
 //Register new user
 router.post('/register', async (req, res) => {
@@ -23,8 +68,6 @@ router.post('/register', async (req, res) => {
             }
         })
         // Since User is Created Temp Create First Appointment
-
-        
 
         // Token Creation
         const token = jwt.sign({id: user.id}, process.env.
@@ -64,10 +107,9 @@ router.post('/login', async(req, res) => {
 })
 
 //Reset password request
-router.post('/reset', async(req, res) => {
+router.post('/forgotPassword', async(req, res) => {
 
     const {username} = req.body
-
     try{
         const user = await prisma.user.findUnique({
             where: {
@@ -78,13 +120,141 @@ router.post('/reset', async(req, res) => {
         if(!user) {return res.sendStatus(404).send({message: "User not Found"})}
         else
         {
-            return res.sendStatus(201)
+
+            const sendEmail = async(option) =>
+            {
+                try {
+
+                    const transporter = nodemailer.createTransport({
+                        service: "gmail",
+                        auth: {
+                            //TODO: Change this to a "business" email, and help set up a google app password, before testing it again.
+                            user: "jarodmmoore@gmail.com",
+                            pass: process.env.GOOGLE_APP_PASSWORD, // The 16-character App Password
+                        },
+                    });
+
+                    const mailOption = {
+                        from: process.env.EMAIL_ID,
+            to: option.email,
+            subject: option.subject,
+            html: option.message
+                    };
+
+                    await transporter.sendMail(mailOption, (err, info) => {
+                        if(err) console.log(err);
+                    });
+                } catch(err) {
+                    console.log(err);
+                }
+            };
+
+            const mailTemplate = (content, buttonUrl, buttonText) => {
+                return `<!DOCTYPE html>
+                <html>
+                <body style="text-align: center; font-family: 'Verdana', serif; color: #000;">
+                <div
+                style="
+                max-width: 400px;
+                margin: 10px;
+                background-color: #fafafa;
+                padding: 25px;
+                border-radius: 20px;
+                "
+                >
+                <p style="text-align: left;">
+                ${content}
+                </p>
+                <a href="${buttonUrl}" target="_blank">
+                <button
+                style="
+                background-color: #444394;
+                border: 0;
+                width: 200px;
+                height: 30px;
+                border-radius: 6px;
+                color: #fff;
+                "
+                >
+                ${buttonText}
+                </button>
+                </a>
+                <p style="text-align: left;">
+                If you are unable to click the above button, copy paste the below URL into your address bar
+                </p>
+                <a href="${buttonUrl}" target="_blank">
+                <p style="margin: 0px; text-align: left; font-size: 10px; text-decoration: none;">
+                ${buttonUrl}
+                </p>
+                </a>
+                </div>
+                </body>
+                </html>`;
+            };
+
+            //Send user an email with a recovery code, to change their password.
+            const token = crypto.randomBytes(20).toString("hex");
+
+            const resetToken = crypto.createHash("sha256").update(token).digest("hex");
+
+            //add token to user's db entry
+            const updateToken = await prisma.user.update({
+                where: {username : username},
+                data:  {resetToken: resetToken},
+            });
+
+            const mailOption = {
+                email: username,
+                subject: "Forgot Password Link",
+                message: mailTemplate(
+                    "We have recieved a password reset request. Please reset your password using the link below.",
+                    `${process.env.FRONTEND_URL}/resetPassword?id=${user.id}&token=${resetToken}`,
+                    "Reset Password"
+                ),
+            };
+            await sendEmail(mailOption);
+            res.json({
+                success: true,
+                message: "A password reset link has been sent to your email.",
+            });
+
+            return res.sendStatus(201);
+
         }
 
     } catch (err) {
-        console.log(err.message)
+        console.log(err)
         res.sendStatus(503)
     }
 })
+
+
+router.post("/resetPassword", async(req, res) => {
+    //Validate that the user ID exists
+    console.log(req.body)
+    const {password, id, token} = req.body
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: {id: parseInt(id)}
+        })
+        if(user.resetToken === token)
+        {
+            const hashedPassword = bcrypt.hashSync(password.password, 8);
+            console.log("Hashed Pass: ", hashedPassword)
+            const updatePass = await prisma.user.update({
+                where: {username : user.username},
+                data:  {password: hashedPassword},
+            });
+        }
+        //TODO: Output that password has been reset
+
+        res.redirect(`${process.env.FRONTEND_URL}`);
+    } catch (err) {
+        console.log(err);
+        res.sendStatus(503)
+    }
+
+});
 
 export default router
