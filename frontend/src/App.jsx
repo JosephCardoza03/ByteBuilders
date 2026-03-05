@@ -3,6 +3,7 @@ import Calendar from "./pages/Calendar";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import About from "./pages/About";
+import ResetPassword from "./pages/Reset"
 import FileViewer from "./pages/FileViewer";
 import {Routes, Route} from "react-router-dom"
 import NavBar from "./Components/NavBar";
@@ -22,6 +23,7 @@ function App() {
           <Route path="/calendar" element={<Calendar />}/>
           <Route path="/login" element={<Login />}/>
           <Route path="/fileviewer" element={<FileViewer />}/>
+          <Route path="/resetPassword" element={<ResetPassword />}/>
         </Routes>
       </main>
       <Footer />

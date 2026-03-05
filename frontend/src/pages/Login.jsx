@@ -7,15 +7,15 @@ import { useState } from "react"
 // ===== GLOBAL STATE =====
 let token = localStorage.getItem('token') || null
 let isAuthenticating = false
-let isLogin
+let isLogin = true
 let resetPassword = false
 
 const apiBase = 'http://localhost:5003/'
 
-
 function Login(){
 
-    const [resetPassword, setResetPassword] = useState(true);
+
+    const [resetPassword, setResetPassword] = useState(false);
 
     const [isLogin, setIsLogin] = useState(true);
 
@@ -83,7 +83,7 @@ function Login(){
                     </div>
 
                     {/* Hide both password input forms when resetting password, since we only need the email */}
-                    {!resetPassword && (
+                    {isLogin && !resetPassword && (
                         <div className="form-group">
                             <div className="password-field">
                             <label htmlFor="password" className="form-label">Password</label>
@@ -122,8 +122,7 @@ function Login(){
                         {"Forgot your password?"}
                         <button onClick={()=> {
                             //TODO: Make this prettier, and fit into the UI better :)
-
-                            setIsLogin(false);
+                            setIsLogin(true);
                             setResetPassword(true);
                         }}
                         type="Forgot Password" className="switch-btn">
@@ -166,13 +165,16 @@ async function forgotPassword(emailVal)
     let res
     try {
 
-        res = await fetch(apiBase + 'auth/reset', {
+        res = await fetch(apiBase + 'auth/forgotPassword', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: emailVal})
         })
 
-
+        //TODO: Backend will always send a res.ok signal after it has run, unless it runs into issues.
+        //If it finds an email account, it'll send a recovery code.
+        //If we do it this way, it doesnt send a "404 account not found" message.
+        //This is so that bad actors cant "hunt" for accounts using this, and their browser terminal.
         if(res.ok)
         {
             //If Yes, send user a password reset link, or code.
@@ -190,7 +192,6 @@ async function forgotPassword(emailVal)
     }
 
     //Display a message either way stating something like "If a user account with this email exists, a password reset link has been sent."
-
 
 }
 
