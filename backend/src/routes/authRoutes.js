@@ -263,10 +263,7 @@ router.post('/forgotPassword', async(req, res) => {
                 ),
             };
             await sendEmail(mailOption);
-            res.json({
-                success: true,
-                message: "A password reset link has been sent to your email.",
-            });
+
 
             return res.sendStatus(201);
 
@@ -298,7 +295,6 @@ router.post("/resetPassword", async(req, res) => {
             });
         }
 
-        res.redirect(`${process.env.FRONTEND_URL}`);
     } catch (err) {
         console.log(err);
         res.sendStatus(503)

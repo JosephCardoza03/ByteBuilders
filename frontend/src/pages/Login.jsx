@@ -8,7 +8,6 @@ import { useState } from "react"
 let token = localStorage.getItem('token') || null
 let isAuthenticating = false
 let isLogin = true
-let resetPassword = false
 
 const apiBase = 'http://localhost:5003/'
 
@@ -52,6 +51,7 @@ function Login(){
         if(!resetPassword)
         {
             console.log(isLogin? "Logging in: " : "Registering: ", data)
+            console.log("A: ",isLogin)
             authenticate(data.email, data.password)
         }
         else
@@ -83,7 +83,7 @@ function Login(){
                     </div>
 
                     {/* Hide both password input forms when resetting password, since we only need the email */}
-                    {isLogin && !resetPassword && (
+                    {!resetPassword && (
                         <div className="form-group">
                             <div className="password-field">
                             <label htmlFor="password" className="form-label">Password</label>
@@ -135,9 +135,10 @@ function Login(){
                 <p className="switch-txt">
                     {isLogin ? "Don't have an account?": "Already have an account?"}
                     <button onClick={()=> {
-                        setIsLogin(!isLogin);
+
                         //disables the "reset password" formatting when switching to login or register
                         setResetPassword(false);
+                        setIsLogin(!isLogin);
                         reset();
                     }} className="switch-btn">
                         {isLogin ? "Register": "Login"}
@@ -212,6 +213,7 @@ async function authenticate(emailVal, passVal) {
 
     try {
         let res
+            console.log("B: ",isLogin)
         if (!isLogin) {
             // register
             res = await fetch(apiBase + 'auth/register', {
