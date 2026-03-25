@@ -14,7 +14,6 @@ import { useState } from "react"
 // ===== GLOBAL STATE =====
 let token = localStorage.getItem('token') || null
 let isAuthenticating = false
-let isLogin = true
 
 const apiBase = 'http://localhost:5003/'
 
@@ -63,9 +62,6 @@ function Login(){
         {
             forgotPassword(data.email)
         }
-
-
-
 
         //TODO: Add redirect functionality, after authenticated login or registration.
 
@@ -174,10 +170,6 @@ async function forgotPassword(emailVal)
             body: JSON.stringify({ username: emailVal})
         })
 
-        //TODO: Backend will always send a res.ok signal after it has run, unless it runs into issues.
-        //If it finds an email account, it'll send a recovery code.
-        //If we do it this way, it doesnt send a "404 account not found" message.
-        //This is so that bad actors cant "hunt" for accounts using this, and their browser terminal.
         if(res.ok)
         {
             //If Yes, send user a password reset link, or code.

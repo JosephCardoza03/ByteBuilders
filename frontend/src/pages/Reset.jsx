@@ -4,12 +4,10 @@ import {yupResolver} from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import { useState } from "react"
 import {
-    useSearchParams,
-    useNavigate
+    useSearchParams
 } from "react-router-dom";
 
 // ===== GLOBAL STATE =====
-let resetPassword = false
 
 const apiBase = 'http://localhost:5003/'
 
@@ -21,7 +19,6 @@ function ResetPassword(){
     const [resetPassword, setResetPassword] = useState(false);
 
     const [searchParams] = useSearchParams();
-    const navigate = useNavigate();
     const id = searchParams.get("id");
     const token = searchParams.get("token");
 
@@ -42,7 +39,6 @@ function ResetPassword(){
         resetPW(data, id, token);
         setResetPassword(true);
         //Optionally can redirect to the login page again.
-        //navigate("../login")
         reset()
     };
 

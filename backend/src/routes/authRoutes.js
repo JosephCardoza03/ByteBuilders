@@ -89,14 +89,14 @@ router.post('/register', async (req, res) => {
 
                     //new NodeMailer SMTP transporter, for Privateemail
 
-                        const transporter = nodemailer.createTransport({
+                    const transporter = nodemailer.createTransport({
                         host: process.env.EMAIL_HOST,
                         port: 465,
                         secure: true,
                         auth: {
-                        user: process.env.EMAIL_USER,
-                        pass: process.env.EMAIL_PASSWORD
-                    }
+                            user: process.env.EMAIL_USER,
+                            pass: process.env.EMAIL_PASSWORD
+                        }
                     });
 
 
@@ -218,8 +218,6 @@ router.post('/register', async (req, res) => {
         return res.sendStatus(503)
     }
 })
-
-
 */
 
 
@@ -376,6 +374,116 @@ router.post('/forgotPassword', async(req, res) => {
 })
 
 
+
+/*
+//Placeholder for the "Contact us" and "Book an Appointment" functionality.
+
+router.post("/contactForm", async(req, res) => {
+
+    const{email, subject, name, message} = req.body
+
+
+    try {
+
+        const sendEmail = async(option) =>
+        {
+            try {
+
+
+                //new NodeMailer SMTP transporter, for Privateemail
+                const transporter = nodemailer.createTransport({
+                    host: process.env.EMAIL_HOST,
+                    port: 465,
+                    secure: true,
+                    auth: {
+                        user: process.env.EMAIL_USER,
+                        pass: process.env.EMAIL_PASSWORD
+                    }
+                });
+
+                const mailOption = {
+                    from: process.env.EMAIL_USER,
+                    to: option.email,
+                    subject: option.subject,
+                    html: option.message
+                };
+
+                await transporter.sendMail(mailOption, (err, info) => {
+                    if(err) console.log(err);
+                });
+            } catch(err) {
+                console.log(err);
+            }
+        };
+
+
+        //TODO: Reformat this to match the website's style and layout!
+        const mailTemplate = (content, buttonUrl, buttonText) => {
+            return `<!DOCTYPE html>
+            <html>
+            <body style="text-align: center; font-family: 'Verdana', serif; color: #000;">
+            <div
+            style="
+            max-width: 400px;
+            margin: 10px;
+            background-color: #fafafa;
+            padding: 25px;
+            border-radius: 20px;
+            "
+            >
+            <p style="text-align: left;">
+            ${content}
+            </p>
+            <a href="${buttonUrl}" target="_blank">
+            <button
+            style="
+            background-color: #444394;
+            border: 0;
+            width: 200px;
+            height: 30px;
+            border-radius: 6px;
+            color: #fff;
+            "
+            >
+            ${buttonText}
+            </button>
+            </a>
+            <p style="text-align: left;">
+            If you are unable to click the above button, copy paste the below URL into your address bar
+            </p>
+            <a href="${buttonUrl}" target="_blank">
+            <p style="margin: 0px; text-align: left; font-size: 10px; text-decoration: none;">
+            ${buttonUrl}
+            </p>
+            </a>
+            </div>
+            </body>
+            </html>`;
+        };
+
+        const mailOption = {
+            email: username,
+            subject: "BecauseWeCare - Request for contact",
+            message: mailTemplate(
+                "Recieved a contact us request.",
+                `${process.env.FRONTEND_URL}/resetPassword?id=${user.id}&token=${resetToken}`,
+                "Reset Password"
+            ),
+        };
+        await sendEmail(mailOption);
+
+
+        return res.sendStatus(201);
+
+
+
+    } catch(err) {
+        console.log(err);
+    }
+
+})
+
+*/
 
 
 router.post("/resetPassword", async(req, res) => {
