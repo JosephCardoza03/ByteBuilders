@@ -17,6 +17,8 @@ model User {
   fullName     String?    // optional for now
   dateOfBirth  DateTime?  // optional for now
   resetToken   String?     // optional for user password reset
+  registerToken String?   //temporary, for initial registration
+  verified      Boolean      //User email verification bool. Updates to true after user has reset their temporary password.
 
   role         UserRole @default(PATIENT)
 

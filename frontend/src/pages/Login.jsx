@@ -4,6 +4,13 @@ import {yupResolver} from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import { useState } from "react"
 
+
+
+//TODO: Clean up and reformat Forgot Password and user registration email HTML formatting
+//      Fix the button on the emails
+
+//TODO: Create 2FA email and logic
+
 // ===== GLOBAL STATE =====
 let token = localStorage.getItem('token') || null
 let isAuthenticating = false
@@ -50,13 +57,10 @@ function Login(){
         //calls to authenticate, to speak to the authentication middleware, to check against current entries in the database.
         if(!resetPassword)
         {
-            console.log(isLogin? "Logging in: " : "Registering: ", data)
-            console.log("A: ",isLogin)
-            authenticate(data.email, data.password)
+            authenticate(data.email, data.password, isLogin)
         }
         else
         {
-            console.log("Resetting password",data.email)
             forgotPassword(data.email)
         }
 
@@ -154,8 +158,6 @@ function Login(){
 async function forgotPassword(emailVal)
 {
     //Debugging
-    console.log(emailVal)
-
     // https://www.geeksforgeeks.org/mern/forgot-reset-password-feature-with-react-and-node-js/
 
 
@@ -197,9 +199,7 @@ async function forgotPassword(emailVal)
 }
 
 
-async function authenticate(emailVal, passVal) {
-    //TODO: Remove this before deployment
-    console.log(emailVal, passVal)
+async function authenticate(emailVal, passVal, isLogin) {
 
     //TODO: Make sure that passVal.length is consistent with the password length for the input box on the frontend
     if (
@@ -213,7 +213,6 @@ async function authenticate(emailVal, passVal) {
 
     try {
         let res
-            console.log("B: ",isLogin)
         if (!isLogin) {
             // register
             res = await fetch(apiBase + 'auth/register', {

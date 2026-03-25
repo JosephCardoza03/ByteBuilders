@@ -23,7 +23,7 @@ const oauth2Client = new google.auth.OAuth2(
 router.get('/login', (req, res) => {
     const url = oauth2Client.generateAuthUrl({
         access_type: 'offline',
-        scope: ['https://www.googleapis.com/auth/calendar https://mail.google.com/']
+        scope: ['https://www.googleapis.com/auth/calendar']
     })
     res.redirect(url)
 })
@@ -50,7 +50,146 @@ router.get('/redirect', async (req, res) => {
 })
 
 
+
 //Register new user
+router.post('/register', async (req, res) => {
+    const { username, password } = req.body
+    // save user name and encrypted password
+    // save email@gmail.com | wadawfawfawf.awfafawfa.wf
+
+    //Creates a temporary password
+    const tempPassword = crypto.randomBytes(5).toString("hex");
+    //encrypt password
+    const hashedPassword = bcrypt.hashSync(tempPassword, 8)
+
+
+    const regtoken = crypto.randomBytes(20).toString("hex");
+    const registrationToken = crypto.createHash("sha256").update(regtoken).digest("hex");
+
+    // save new user's email and temp password into DB, with their registration token.
+    try{
+        const user = await prisma.user.create({
+            data: {
+                username: username,
+                password: hashedPassword,
+                registerToken: registrationToken,
+                verified: false,
+            }
+        })
+
+        if(!user) {return res.sendStatus(404).send({message: "User not Found"})}
+        else
+        {
+
+            const sendEmail = async(option) =>
+            {
+                try {
+
+
+
+                    //new NodeMailer SMTP transporter, for Privateemail
+
+                        const transporter = nodemailer.createTransport({
+                        host: process.env.EMAIL_HOST,
+                        port: 465,
+                        secure: true,
+                        auth: {
+                        user: process.env.EMAIL_USER,
+                        pass: process.env.EMAIL_PASSWORD
+                    }
+                    });
+
+
+
+                    const mailOption = {
+                        from: process.env.EMAIL_USER,
+                        to: option.email,
+                        subject: option.subject,
+                        html: option.message
+                    };
+
+                    await transporter.sendMail(mailOption, (err, info) => {
+                        if(err) console.log(err);
+                    });
+                } catch(err) {
+                    console.log(err);
+                }
+            };
+
+
+            //TODO: Reformat this to match the website's style and layout!
+            const mailTemplate = (content, buttonUrl, buttonText) => {
+                return `<!DOCTYPE html>
+                <html>
+                <body style="text-align: center; font-family: 'Verdana', serif; color: #000;">
+                <div
+                style="
+                max-width: 400px;
+                margin: 10px;
+                background-color: #fafafa;
+                padding: 25px;
+                border-radius: 20px;
+                "
+                >
+                <p style="text-align: left;">
+                ${content}
+                </p>
+                <a href="${buttonUrl}" target="_blank">
+                <button
+                style="
+                background-color: #db2777;
+                border: 0;
+                width: 200px;
+                height: 30px;
+                border-radius: 3px;
+                color: #fff;
+                "
+                >
+                ${buttonText}
+                </button>
+                </a>
+                <p style="text-align: left;">
+                If you are unable to click the above button, copy paste the below URL into your address bar
+                </p>
+                <a href="${buttonUrl}" target="_blank">
+                <p style="margin: 0px; text-align: left; font-size: 10px; text-decoration: none;">
+                ${buttonUrl}
+                </p>
+                </a>
+                </div>
+                </body>
+                </html>`;
+            };
+
+            //Send user an email with a recovery code, to change their password
+
+            const mailOption = {
+                email: username,
+                subject: "BecauseWeCare - Verify your account",
+                message: mailTemplate(
+                "Please finish registering your account using the link below.",
+                `${process.env.FRONTEND_URL}/resetPassword?id=${user.id}&token=${registrationToken}`,
+                "Reset Password"
+                ),
+            };
+            await sendEmail(mailOption);
+
+
+            return res.sendStatus(201);
+
+        }
+        return res.status(201)
+
+    } catch (error) {
+        console.log(error.message)
+        return res.sendStatus(503)
+    }
+})
+
+
+
+
+/*  OLD Register Code (Uses username and hashed password)
 router.post('/register', async (req, res) => {
     const { username, password } = req.body
     // save user name and encrypted password
@@ -80,6 +219,10 @@ router.post('/register', async (req, res) => {
     }
 })
 
+
+*/
+
+
 router.post('/login', async(req, res) => {
     // retrieve email, and search for their password
     // but pass is encrypted so we re encrypte the entered password and search for the encrypted password in our database
@@ -108,35 +251,6 @@ router.post('/login', async(req, res) => {
 })
 
 
-// Employees can create a registration token for new patients to be registered.
-// This token will be used in the registration page alongside a username and password for creating an account.
-
-router.post('/createRegistrationCode', async(req, res) => {
-
-    try{
-
-        //Optionally, add date of birth as a requirement
-        const { name } = req.body;
-
-        const token = crypto.randomBytes(20).toString("hex");
-        const registrationToken = crypto.createHash("sha256").update(token).digest("hex");
-
-        const createUser = await prisma.user.create({
-            data: {
-                fullName: name,
-                registerToken: registrationToken,
-                //TODO: Either rework the schema to not require a username and password, and instead require a name and token, OR generate a replacable username and password when creating the registration Token
-                //username:
-            }
-        });
-
-    } catch(err) {
-        console.log(err);
-    }
-
-});
-
-
 //Reset password request
 router.post('/forgotPassword', async(req, res) => {
 
@@ -157,10 +271,7 @@ router.post('/forgotPassword', async(req, res) => {
                 try {
 
 
-                    //TODO: work with Everardo to get this all tested and working with the actual email, going forward
-
                     //new NodeMailer SMTP transporter, for Privateemail
-                    {/*
                     const transporter = nodemailer.createTransport({
                         host: process.env.EMAIL_HOST,
                         port: 465,
@@ -170,20 +281,9 @@ router.post('/forgotPassword', async(req, res) => {
                             pass: process.env.EMAIL_PASSWORD
                         }
                     });
-                */}
-
-
-                    const transporter = nodemailer.createTransport({
-                        service: "gmail",
-                        auth: {
-
-                            user: "jarodmmoore@gmail.com",
-                            pass: process.env.GOOGLE_APP_PASSWORD, // The 16-character App Password
-                        },
-                    });
 
                     const mailOption = {
-                        from: process.env.EMAIL_ID,
+                        from: process.env.EMAIL_USER,
                         to: option.email,
                         subject: option.subject,
                         html: option.message
@@ -255,7 +355,7 @@ router.post('/forgotPassword', async(req, res) => {
 
             const mailOption = {
                 email: username,
-                subject: "Forgot Password Link",
+                subject: "BecauseWeCare - Forgot Password Link",
                 message: mailTemplate(
                     "We have recieved a password reset request. Please reset your password using the link below.",
                     `${process.env.FRONTEND_URL}/resetPassword?id=${user.id}&token=${resetToken}`,
@@ -276,22 +376,35 @@ router.post('/forgotPassword', async(req, res) => {
 })
 
 
+
+
 router.post("/resetPassword", async(req, res) => {
     //Validate that the user ID exists
-    console.log(req.body)
     const {password, id, token} = req.body
 
     try {
         const user = await prisma.user.findUnique({
             where: {id: parseInt(id)}
         })
+
+        // If the user is redirected to this page it checks if the link is being used for a password reset,
+        // or to complete account registration.
         if(user.resetToken === token)
         {
             const hashedPassword = bcrypt.hashSync(password.password, 8);
-            console.log("Hashed Pass: ", hashedPassword)
             const updatePass = await prisma.user.update({
                 where: {username : user.username},
-                data:  {password: hashedPassword},
+                data:  {password: hashedPassword, resetToken:""},
+
+            });
+        }
+        else if(user.registerToken === token)
+        {
+            const hashedPassword = bcrypt.hashSync(password.password, 8);
+            const updatePass = await prisma.user.update({
+                where: {username : user.username},
+                data:  {password: hashedPassword, verified: true, registerToken: ""},
+
             });
         }
 
@@ -299,7 +412,8 @@ router.post("/resetPassword", async(req, res) => {
         console.log(err);
         res.sendStatus(503)
     }
-
 });
+
+
 
 export default router
