@@ -88,7 +88,6 @@ router.post('/register', async (req, res) => {
 
 
                     //new NodeMailer SMTP transporter, for Privateemail
-
                     const transporter = nodemailer.createTransport({
                         host: process.env.EMAIL_HOST,
                         port: 465,
@@ -117,48 +116,73 @@ router.post('/register', async (req, res) => {
             };
 
 
-            //TODO: Reformat this to match the website's style and layout!
-            const mailTemplate = (content, buttonUrl, buttonText) => {
+            const mailTemplate = (header, content, buttonUrl, buttonText) => {
                 return `<!DOCTYPE html>
                 <html>
-                <body style="text-align: center; font-family: 'Verdana', serif; color: #000;">
-                <div
-                style="
-                max-width: 400px;
-                margin: 10px;
-                background-color: #fafafa;
-                padding: 25px;
-                border-radius: 20px;
-                "
-                >
-                <p style="text-align: left;">
-                ${content}
-                </p>
-                <a href="${buttonUrl}" target="_blank">
-                <button
-                style="
-                background-color: #db2777;
-                border: 0;
-                width: 200px;
-                height: 30px;
-                border-radius: 3px;
-                color: #fff;
-                "
-                >
-                ${buttonText}
-                </button>
-                </a>
-                <p style="text-align: left;">
-                If you are unable to click the above button, copy paste the below URL into your address bar
-                </p>
-                <a href="${buttonUrl}" target="_blank">
-                <p style="margin: 0px; text-align: left; font-size: 10px; text-decoration: none;">
-                ${buttonUrl}
-                </p>
-                </a>
-                </div>
-                </body>
-                </html>`;
+                    <body style="
+                    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+                    min-height: 100vh;
+                    width: 100%;
+                    background: linear-gradient(to bottom, #f8daa3, #e8e1e7f7);
+                    background-color: var(--bg-color);
+                    transition: background-color .3s ease-in-out;
+                    padding: 1rem;
+                    gap: 2rem;
+                    margin: 10px;
+                    ">
+                        <div
+                        style="
+                        display: block;
+                        align: center;
+                        min-Width: 400px;
+                        max-width: 600px;
+                        max-height: 800px;
+                        margin: 10px;
+                        background-color: #fafafa;
+                        padding: 2rem;
+                        border-radius: 10px;
+                        ">
+                            <h1 style="text-align: center; font-size: 1.2rem;">
+                            ${header}
+                            </h1>
+
+                            <p style="text-align: left; font-size: 0.9rem;">
+                            ${content}
+                            </p>
+
+
+                            <center>
+                                <a href="${buttonUrl}" target="_blank">
+                                    <button
+                                    style="
+                                    background-color: #ec4899;
+                                    width: 300px;
+                                    height: 40px;
+                                    color: white;
+                                    border: none;
+                                    border-radius: 3px;
+                                    padding: .6rem;
+                                    font-size: 1rem;
+                                    margin:auto;
+                                    ">
+                                    ${buttonText}
+                                    </button>
+                                </a>
+                            </center>
+
+                            <p style="text-align: left; font-size: 0.9rem;">
+                            If you are unable to click the button above, copy paste the URL below into your browser's address bar:
+                            </p>
+
+                            <a href="${buttonUrl}" target="_blank">
+                                <p style="margin: 0px; text-align: left; font-size: 10px; text-decoration: none;">
+                                ${buttonUrl}
+                                </p>
+                            </a>
+                        </div>
+                    </body>
+                </html>
+                `;
             };
 
             //Send user an email with a recovery code, to change their password
@@ -167,9 +191,10 @@ router.post('/register', async (req, res) => {
                 email: username,
                 subject: "BecauseWeCare - Verify your account",
                 message: mailTemplate(
-                "Please finish registering your account using the link below.",
+                "Complete Account Registration",
+                "Please finish registering your BecauseWeCare client account using the link below.",
                 `${process.env.FRONTEND_URL}/resetPassword?id=${user.id}&token=${registrationToken}`,
-                "Reset Password"
+                "Register Account"
                 ),
             };
             await sendEmail(mailOption);
@@ -297,47 +322,73 @@ router.post('/forgotPassword', async(req, res) => {
 
 
             //TODO: Reformat this to match the website's style and layout!
-            const mailTemplate = (content, buttonUrl, buttonText) => {
+            const mailTemplate = (header, content, buttonUrl, buttonText) => {
                 return `<!DOCTYPE html>
                 <html>
-                <body style="text-align: center; font-family: 'Verdana', serif; color: #000;">
-                <div
-                style="
-                max-width: 400px;
-                margin: 10px;
-                background-color: #fafafa;
-                padding: 25px;
-                border-radius: 20px;
-                "
-                >
-                <p style="text-align: left;">
-                ${content}
-                </p>
-                <a href="${buttonUrl}" target="_blank">
-                <button
-                style="
-                background-color: #444394;
-                border: 0;
-                width: 200px;
-                height: 30px;
-                border-radius: 6px;
-                color: #fff;
-                "
-                >
-                ${buttonText}
-                </button>
-                </a>
-                <p style="text-align: left;">
-                If you are unable to click the above button, copy paste the below URL into your address bar
-                </p>
-                <a href="${buttonUrl}" target="_blank">
-                <p style="margin: 0px; text-align: left; font-size: 10px; text-decoration: none;">
-                ${buttonUrl}
-                </p>
-                </a>
-                </div>
-                </body>
-                </html>`;
+                    <body style="
+                    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+                    min-height: 100vh;
+                    width: 100%;
+                    background: linear-gradient(to bottom, #f8daa3, #e8e1e7f7);
+                    background-color: var(--bg-color);
+                    transition: background-color .3s ease-in-out;
+                    padding: 1rem;
+                    gap: 2rem;
+                    margin: 10px;
+                    ">
+                        <div
+                        style="
+                        display: block;
+                        align: center;
+                        min-Width: 400px;
+                        max-width: 600px;
+                        max-height: 800px;
+                        margin: 10px;
+                        background-color: #fafafa;
+                        padding: 2rem;
+                        border-radius: 10px;
+                        ">
+                            <h1 style="text-align: center; font-size: 1.2rem;">
+                            ${header}
+                            </h1>
+
+                            <p style="text-align: left; font-size: 0.9rem;">
+                            ${content}
+                            </p>
+
+
+                            <center>
+                                <a href="${buttonUrl}" target="_blank">
+                                    <button
+                                    style="
+                                    background-color: #ec4899;
+                                    width: 300px;
+                                    height: 40px;
+                                    color: white;
+                                    border: none;
+                                    border-radius: 3px;
+                                    padding: .6rem;
+                                    font-size: 1rem;
+                                    margin:auto;
+                                    ">
+                                    ${buttonText}
+                                    </button>
+                                </a>
+                            </center>
+
+                            <p style="text-align: left; font-size: 0.9rem;">
+                            If you are unable to click the button above, copy paste the URL below into your browser's address bar:
+                            </p>
+
+                            <a href="${buttonUrl}" target="_blank">
+                                <p style="margin: 0px; text-align: left; font-size: 10px; text-decoration: none;">
+                                ${buttonUrl}
+                                </p>
+                            </a>
+                        </div>
+                    </body>
+                </html>
+                `;
             };
 
             //Send user an email with a recovery code, to change their password.
@@ -355,7 +406,8 @@ router.post('/forgotPassword', async(req, res) => {
                 email: username,
                 subject: "BecauseWeCare - Forgot Password Link",
                 message: mailTemplate(
-                    "We have recieved a password reset request. Please reset your password using the link below.",
+                    "Forgot Password",
+                    "We have recieved a password reset request for an account registered to this email. \n\nPlease reset your password using the link below.",
                     `${process.env.FRONTEND_URL}/resetPassword?id=${user.id}&token=${resetToken}`,
                     "Reset Password"
                 ),
@@ -375,12 +427,132 @@ router.post('/forgotPassword', async(req, res) => {
 
 
 
-/*
+
 //Placeholder for the "Contact us" and "Book an Appointment" functionality.
 
 router.post("/contactForm", async(req, res) => {
 
-    const{email, subject, name, message} = req.body
+
+    const{nameIn, emailIn, subjectIn, messageIn} = req.body
+
+
+    /*
+    //Testing data*
+    const emailIn = "testEmail@gmail.com";
+    const nameIn = "John Smith";
+    const subjectIn = "This is a subject Line!";
+    const messageIn = "Lorem ipsum dolor sit amet";
+    */
+
+    try {
+
+        const sendEmail = async(option) =>
+        {
+            try {
+
+
+                //new NodeMailer SMTP transporter, for Privateemail
+                const transporter = nodemailer.createTransport({
+                    host: process.env.EMAIL_HOST,
+                    port: 465,
+                    secure: true,
+                    auth: {
+                        user: process.env.EMAIL_USER,
+                        pass: process.env.EMAIL_PASSWORD
+                    }
+                });
+
+                const mailOption = {
+                    from: process.env.EMAIL_USER,
+                    to: option.email,
+                    subject: option.subject,
+                    html: option.message
+                };
+
+                await transporter.sendMail(mailOption, (err, info) => {
+                    if(err) console.log(err);
+                });
+            } catch(err) {
+                console.log(err);
+            }
+        };
+
+
+        //TODO: Reformat this to match the website's style and layout!
+        const mailTemplate = (Name, Email, Subject, Message) => {
+            return `<!DOCTYPE html>
+            <html>
+            <body style="text-align: center; font-family: 'Verdana', serif; color: #000;">
+            <div
+            style="
+            max-width: 400px;
+            margin: 10px;
+            background-color: #fafafa;
+            padding: 25px;
+            border-radius: 20px;
+            "
+            >
+            <h3 style="text-align: left;">
+            Recieved a 'Contact Us' request:
+            </h3>
+
+            <p style="text-align: left;">
+            Name: ${Name}
+            </p>
+            <p style="text-align: left;">
+            Email: ${Email}
+            </p>
+            <p style="text-align: left;">
+            Subject: ${Subject}
+            </p>
+            <p style="text-align: left;">
+            Message: ${Message}
+            </p>
+            </div>
+            </body>
+            </html>`;
+
+        };
+
+        const mailOption = {
+            email: username,
+            subject: `Contact Us - ${subjectIn}`,
+            message: mailTemplate(
+                `${nameIn}`,
+                `${emailIn}`,
+                `${subjectIn}`,
+                `${messageIn}`
+            ),
+        };
+        await sendEmail(mailOption);
+
+
+        return res.sendStatus(201);
+
+
+
+    } catch(err) {
+        console.log(err);
+    }
+
+})
+
+
+
+//TODO:
+
+router.post("/consultForm", async(req, res) => {
+
+    const{nameIn, emailIn, locationIn, hoursIn, messageIn} = req.body
+
+    /*
+    //Testing data
+    const emailIn = "testEmail@gmail.com";
+    const nameIn = "John Smith";
+    const locationIn = "1234 Apple St, Denton, TX, 76201";
+    const hoursIn = "16 hours a week";
+    const messageIn = "Lorem ipsum dolor sit amet";
+    */
 
 
     try {
@@ -418,7 +590,7 @@ router.post("/contactForm", async(req, res) => {
 
 
         //TODO: Reformat this to match the website's style and layout!
-        const mailTemplate = (content, buttonUrl, buttonText) => {
+        const mailTemplate = (Name, Email, location, hours, Message) => {
             return `<!DOCTYPE html>
             <html>
             <body style="text-align: center; font-family: 'Verdana', serif; color: #000;">
@@ -431,43 +603,40 @@ router.post("/contactForm", async(req, res) => {
             border-radius: 20px;
             "
             >
+            <h3 style="text-align: left;">
+            Recieved a Consultation request:
+            </h3>
+
             <p style="text-align: left;">
-            ${content}
+            Name: ${Name}
             </p>
-            <a href="${buttonUrl}" target="_blank">
-            <button
-            style="
-            background-color: #444394;
-            border: 0;
-            width: 200px;
-            height: 30px;
-            border-radius: 6px;
-            color: #fff;
-            "
-            >
-            ${buttonText}
-            </button>
-            </a>
             <p style="text-align: left;">
-            If you are unable to click the above button, copy paste the below URL into your address bar
+            Email: ${Email}
             </p>
-            <a href="${buttonUrl}" target="_blank">
-            <p style="margin: 0px; text-align: left; font-size: 10px; text-decoration: none;">
-            ${buttonUrl}
+            <p style="text-align: left;">
+            Location: ${location}
             </p>
-            </a>
+            <p style="text-align: left;">
+            Hours per week: ${hours}
+            </p>
+            <p style="text-align: left;">
+            Additional Notes: ${Message}
+            </p>
             </div>
             </body>
             </html>`;
+
         };
 
         const mailOption = {
             email: username,
-            subject: "BecauseWeCare - Request for contact",
+            subject: `Request for Consultation`,
             message: mailTemplate(
-                "Recieved a contact us request.",
-                `${process.env.FRONTEND_URL}/resetPassword?id=${user.id}&token=${resetToken}`,
-                "Reset Password"
+                `${nameIn}`,
+                `${emailIn}`,
+                `${locationIn}`,
+                `${hoursIn}`,
+                `${messageIn}`
             ),
         };
         await sendEmail(mailOption);
@@ -482,8 +651,6 @@ router.post("/contactForm", async(req, res) => {
     }
 
 })
-
-*/
 
 
 router.post("/resetPassword", async(req, res) => {

@@ -153,11 +153,6 @@ function Login(){
 
 async function forgotPassword(emailVal)
 {
-    //Debugging
-    // https://www.geeksforgeeks.org/mern/forgot-reset-password-feature-with-react-and-node-js/
-
-
-    //TODO: Add nodemailer, so that we can send the user a reset password link
 
     //Onsubmit, verify that the user email exists.
     console.log("Authenticating user email with database");
@@ -190,7 +185,6 @@ async function forgotPassword(emailVal)
 
 }
 
-
 async function authenticate(emailVal, passVal, isLogin) {
 
     //TODO: Make sure that passVal.length is consistent with the password length for the input box on the frontend
@@ -207,7 +201,7 @@ async function authenticate(emailVal, passVal, isLogin) {
         let res
         if (!isLogin) {
             // register
-            res = await fetch(apiBase + 'auth/register', {
+            res = await fetch(apiBase + 'auth/consultForm', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: emailVal, password: passVal })
