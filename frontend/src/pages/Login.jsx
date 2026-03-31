@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form"
 import {yupResolver} from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import { useState } from "react"
+import { register as registerUser } from "../api/auth"
 
 
 
@@ -67,7 +68,7 @@ function Login(){
 
         reset()
     };
-
+*/
     return (
         <div className="login">
             <h1>{isLogin ? "Welcome Back!" : "Welcome!"}</h1>
@@ -77,7 +78,7 @@ function Login(){
                 <form onSubmit={handleSubmit(onSubmit)} className="login-form">
                     <div className="form-group">
                         <label htmlFor="email" className="form-label">Email</label>
-                        <input type="text" placeholder="ex@hotmail.com" {...register("email")}
+                        <input type="text" placeholder="ex@email.com" {...register("email")}
                             className="form-input"/>
                         <p className="error">{errors.email?.message}</p>
                     </div>
