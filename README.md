@@ -16,6 +16,7 @@ To Run the frontned
 On first build, run the following:
 <pre>
 npm install
+npm install dotenv
 docker compose build
 docker compose run app npx prisma migrate dev --name init
 </pre>
