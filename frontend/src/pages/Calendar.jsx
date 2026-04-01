@@ -16,12 +16,7 @@ function Calendar(){
     const [isEditing, setIsEditing] = useState(false);
     const [error, setError] = useState("");
 
-    const clickDate = (info) => {
-        console.log("date clicked", info.dateStr);
-        SetselectedDate(info.dateStr);
-        setIsPopupOpen(true);
-    };
-
+    
     const handleSelect = (info) => {
         console.log("Selected: ", info.startStr, info.endStr);
 
