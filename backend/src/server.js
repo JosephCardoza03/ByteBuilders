@@ -9,7 +9,7 @@ import cors from "cors";
 //Allows communication between frontend client and database server,
 //  without flagging CORS communication issues in the web browser
 const corsOptions = {
-    origin: ["http://localhost:3000"],
+    origin: ["http://localhost:3000", "https://bytebuilders-0ntq.onrender.com"],
 };
 
 
@@ -36,7 +36,7 @@ app.get('/', (req, res) => {
 
 //Temporary redirect back to the actual frontend
 app.get('/', (req, res) => {
-    res.redirect("http://localhost:3000/")
+    res.redirect("https://bytebuilders-0ntq.onrender.com/")
 })
 
 //ROUTES
