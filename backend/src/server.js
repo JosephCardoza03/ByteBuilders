@@ -14,7 +14,7 @@ import authMiddleware from './middleware/authMiddleware.js';
 
 const allowedOrigins = process.env.FRONTEND_ORIGIN
   ? process.env.FRONTEND_ORIGIN.split(',').map((origin) => origin.trim())
-  : ["http://localhost:3000", "https://nominatim.openstreetmap.org"];
+  : ["http://localhost:3000", "https://nominatim.openstreetmap.org", "https://bytebuilders-0ntq.onrender.com"];
 
 //Allows communication between frontend client and database server,
 //  without flagging CORS communication issues in the web browser
@@ -113,7 +113,7 @@ app.get('/', (req, res) => {
 
 //Temporary redirect back to the actual frontend
 app.get('/', (req, res) => {
-    res.redirect("http://localhost:3000/")
+    res.redirect("https://bytebuilders-0ntq.onrender.com/")
 })
 
 //ROUTES

@@ -192,7 +192,7 @@ router.post('/login', async(req, res) => {
         console.log(user);
 
         //User not in Database => Exit
-        if (!user) { return res.sendStatus(404).send({ message: "User not Found"})}
+        if (!user) { return res.status(404).json({ message: "User not Found"})}
         // Compare Hashed Passwords
         const passwordIsValid = bcrypt.compareSync(password, user.password)
         if(!passwordIsValid){ return res.status(401).send({ message: "Incorrect Password"})}
