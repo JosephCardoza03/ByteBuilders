@@ -8,16 +8,11 @@ const MAX_PASS_LEN = 20
 const MIN_PASS_LEN = 6
 const PASS_REQUIREMENTS = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).+$/
 
-//TODO: Clean up and reformat Forgot Password and user registration email HTML formatting
-//      Fix the button on the emails
-
-//TODO: Create 2FA email and logic
-
 // ===== GLOBAL STATE =====
-let token = localStorage.getItem('token') || null
 let isAuthenticating = false
 
 const apiBase = 'https://becausewecare.onrender.com/'
+
 
 function Login(){
 
@@ -25,6 +20,9 @@ function Login(){
     const [resetPassword, setResetPassword] = useState(false);
 
     const [isLogin, setIsLogin] = useState(true);
+
+
+
 
     const loginSchema = yup.object().shape({
         email: yup.string().email("Invalid format").required("Email is required"),
@@ -53,20 +51,21 @@ function Login(){
 
     //When submitting login or registration data, we (currently) output it to the console log for debugging, and then run an authentication call with the database server
     const onSubmit = (data) => {
-        //TODO: Remove this before deployment
-
 
         //calls to authenticate, to speak to the authentication middleware, to check against current entries in the database.
         if(!resetPassword)
         {
-            authenticate(data.email, data.password, isLogin)
+            (async () => {
+
+                await authenticate(data.email, data.password, isLogin);
+            })()
+
         }
         else
         {
             forgotPassword(data.email)
         }
 
-        //TODO: Add redirect functionality, after authenticated login or registration.
 
         reset()
     };
@@ -76,7 +75,6 @@ function Login(){
             <h1>{isLogin ? "Welcome Back!" : "Welcome!"}</h1>
             <div className="login-container">
                 <h2>{resetPassword ? "Reset Password" : (isLogin ? "Login" : "Register")}</h2>
-                
                 <form onSubmit={handleSubmit(onSubmit)} className="login-form">
                     <div className="form-group">
                         <label htmlFor="email" className="form-label">Email</label>
@@ -84,20 +82,20 @@ function Login(){
                             className="form-input"/>
                         <p className="error">{errors.email?.message}</p>
                     </div>
-
                     {/* Hide both password input forms when resetting password, since we only need the email */}
                     {!resetPassword && (
                         <div className="form-group">
-                            <div className="password-field">
-                            <label htmlFor="password" className="form-label">Password</label>
-                            <input type="password"
-                                placeholder="******" {...register("password")} maxLength={MAX_PASS_LEN}
-                                className="form-input"/>
-                            </div>
+                        <div className="password-field">
+                        <label htmlFor="password" className="form-label">Password</label>
+                        <input type="password"
+                        placeholder="******" {...register("password")}
+                        className="form-input"/>
+                        </div>
 
-                            <p className="error">{errors.password?.message}</p>
+                        <p className="error">{errors.password?.message}</p>
                         </div>
                     )}
+
 
                     
 
@@ -125,7 +123,6 @@ function Login(){
                     <p className="switch-txt">
                         {"Forgot your password?"}
                         <button onClick={()=> {
-                            //TODO: Make this prettier, and fit into the UI better :)
                             setIsLogin(true);
                             setResetPassword(true);
                         }}
@@ -189,6 +186,8 @@ async function forgotPassword(emailVal)
 
 }
 
+
+
 async function authenticate(emailVal, passVal, isLogin) {
 
     //TODO: Make sure that passVal.length is consistent with the password length for the input box on the frontend
@@ -211,32 +210,41 @@ async function authenticate(emailVal, passVal, isLogin) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: emailVal, password: passVal })
             })
+            if(res.status === 201)
+            {
+                window.location.replace("/");
+            }
+
         } else {
             // login
             res = await fetch(apiBase + 'auth/login', {
+                credentials: 'include',
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: emailVal, password: passVal })
             })
+            const data = await res.json();
+            if(res.status === 201)
+            {
+                window.location.replace("/");
+            }
+
         }
-
-        const data = await res.json().catch(() => ({}))
-
+/*
         if (!res.ok || !data.token) {
             throw new Error(data.message || 'Failed to authenticate.')
         }
-
-        token = data.token
-        localStorage.setItem('token', token)
+        */
 
 
-        //TODO: Add things here to output errors to the frontend, for users to see, instead of only showing it in the browser's console
     } catch (err) {
 
     } finally {
 
     }
 }
+
+
 
 
 
