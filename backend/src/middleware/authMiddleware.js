@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken'
 import prisma from '../prismaClient.js'
 
 async function authMiddleware(req, res, next) {
-  const authHeader = req.headers['authorization'] || req.cookies?.authcookie
+  const authHeader = req.headers['authorization']
 
   if (!authHeader) {
     return res.status(401).json({ message: "No token provided" })

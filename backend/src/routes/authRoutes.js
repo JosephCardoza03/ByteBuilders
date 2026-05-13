@@ -5,11 +5,8 @@ import prisma from '../prismaClient.js'
 import { google } from 'googleapis'
 import crypto from "crypto"
 import nodemailer from 'nodemailer';
-
+import dotenv from 'dotenv';
 const router = express.Router()
-
-import cookieParser from 'cookie-parser';
-router.use(cookieParser())
 
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
@@ -17,12 +14,40 @@ require("dotenv").config();
 
 let authToken;
 
+// /appointments/redirect
+router.get('/redirect', async (req, res) => {
+    const code = req.query.code
+
+    if (!code) {
+        return res.status(400).send('No ?code provided from Google')
+    }
+
+    try {
+        const { tokens } = await oauth2Client.getToken(code)
+        oauth2Client.setCredentials(tokens)
+        authtoken = tokens
+        tokensSet = true
+        console.log('Google Calendar OAuth tokens set.')
+        res.redirect('/')
+    } catch (err) {
+        console.error('Error exchanging code for token:', err)
+        res.status(500).send('Failed to authorize Google Calendar.')
+    }
+})
+
+
+
 //Register new user
 router.post('/register', async (req, res) => {
     const { username, password } = req.body
     // save user name and encrypted password
     // save email@gmail.com | wadawfawfawf.awfafawfa.wf
-    const hashedPassword = bcrypt.hashSync(password, 8);
+
+    //Creates a temporary password
+    const tempPassword = crypto.randomBytes(5).toString("hex");
+    //encrypt password
+    const hashedPassword = bcrypt.hashSync(tempPassword, 8)
+
 
     const regtoken = crypto.randomBytes(20).toString("hex");
     const registrationToken = crypto.createHash("sha256").update(regtoken).digest("hex");
@@ -154,7 +179,7 @@ router.post('/register', async (req, res) => {
                 message: mailTemplate(
                 "Complete Account Registration",
                 "Please finish registering your BecauseWeCare client account using the link below.",
-                `${process.env.FRONTEND_URL}/verify?id=${user.id}&token=${registrationToken}`,
+                `${process.env.FRONTEND_URL}/resetPassword?id=${user.id}&token=${registrationToken}`,
                 "Register Account"
                 ),
             };
@@ -175,6 +200,38 @@ router.post('/register', async (req, res) => {
 
 
 
+/*  OLD Register Code (Uses username and hashed password)
+router.post('/register', async (req, res) => {
+    const { username, password } = req.body
+    // save user name and encrypted password
+    // save email@gmail.com | wadawfawfawf.awfafawfa.wf
+
+    //encrypt password
+    const hashedPassword = bcrypt.hashSync(password, 8)
+
+    // save new user and password into DB
+    try{
+        const user = await prisma.user.create({
+            data: {
+                username,
+                password: hashedPassword
+            }
+        })
+        // Since User is Created Temp Create First Appointment
+
+        // Token Creation
+        const token = jwt.sign({id: user.id}, process.env.
+        JWT_SECRET, { expiresIn: '24h'})
+        return res.status(201).json({token})
+
+    } catch (error) {
+        console.log(error.message)
+        return res.sendStatus(503)
+    }
+})
+*/
+
+
 router.post('/login', async(req, res) => {
     // retrieve email, and search for their password
     // but pass is encrypted so we re encrypte the entered password and search for the encrypted password in our database
@@ -182,15 +239,11 @@ router.post('/login', async(req, res) => {
     const {username, password} = req.body
 
     try {
-        console.log("attempting user login")
-        const user = await prisma.user.findUnique({
+       const user = await prisma.user.findUnique({
             where: {
                 username: username
             }
         })
-
-        console.log(user);
-
         //User not in Database => Exit
         if (!user) { return res.sendStatus(404).send({ message: "User not Found"})}
         // Compare Hashed Passwords
@@ -199,31 +252,12 @@ router.post('/login', async(req, res) => {
 
         // All Checks Passed
         const token = jwt.sign({ id: user.id}, process.env.JWT_SECRET, {expiresIn: '24h'})
-        var cookieName = 'authcookie';
-        res.cookie(cookieName, token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-        });
-        res.status(201).json({token: token, name: user.fullName});
+        res.json({token})
     } catch (err) {
         console.log(err.message)
         res.sendStatus(503)
     }
-});
-
-router.post('/logout', async(req, res) => {
-
-    //responds to the request with a clearCookie signal, deleting the user's auth cookie.
-    res.clearCookie('authcookie', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-    }).sendStatus(201);
-
-});
-
-
+})
 
 
 //Reset password request
@@ -563,6 +597,8 @@ router.post("/contactForm", async(req, res) => {
 
 
 
+//TODO:
+
 router.post("/consultForm", async(req, res) => {
 
     const{nameIn, emailIn, phoneIn, locationIn, hoursIn, messageIn} = req.body
@@ -771,34 +807,14 @@ router.post("/resetPassword", async(req, res) => {
 
             });
         }
-
-    } catch (err) {
-        console.log(err);
-        res.sendStatus(503)
-    }
-});
-
-router.post("/verifyAcc", async(req, res) => {
-    //Validate that the user ID exists
-    const {id, token, fullName} = req.body
-
-    try {
-        const user = await prisma.user.findUnique({
-            where: {id: parseInt(id)}
-        })
-
-        // If the user is redirected to this page it checks if the link is being used for a password reset,
-        // or to complete account registration.
-
-        if(user.registerToken === token)
+        else if(user.registerToken === token)
         {
-
+            const hashedPassword = bcrypt.hashSync(password.password, 8);
             const updatePass = await prisma.user.update({
                 where: {username : user.username},
-                data:  {verified: true, registerToken: "", fullName: fullName},
+                data:  {password: hashedPassword, verified: true, registerToken: ""},
 
             });
-            res.sendStatus(201);
         }
 
     } catch (err) {
@@ -808,343 +824,5 @@ router.post("/verifyAcc", async(req, res) => {
 });
 
 
-router.post('/authenticateUser', async(req, res) => {
-    const cookieToken = req.cookies.authcookie;
-    if(!cookieToken) console.log("invalid cookie");
 
-    let userID;
-    jwt.verify(cookieToken, process.env.JWT_SECRET, (err, user) => {
-        if(err) return console.log("Error or invalid cookie");
-        // req.user = user;
-        console.log("Authenticated with cookie as user: ", user);
-        userID = user.id;
-    });
-
-    const user = await prisma.user.findFirst({
-        where: {
-            id: userID,
-        }
-    });
-
-    let authType = user.role;
-
-    if(user.role === 'ADMIN')
-    {
-
-        const patients = await prisma.user.findMany({
-            where: {
-                role: "PATIENT"
-            }
-        });
-
-        const employee = await prisma.user.findMany({
-            where: {
-                role: "CAREGIVER"
-            },
-        });
-
-
-        res.json({role: authType, events: user.calEvents, fullName: user.fullName, empl: employee, user: patients, id: user.id});
-    }
-    else
-    {
-        res.json({role: authType,events: user.calEvents, fullName: user.fullName})
-    }
-})
-
-router.post("/reqUserEvents", async(req, res) => {
-
-    const { userID } = req.body;
-
-    //Retrieve the user's DB entry
-    const user = await prisma.user.findFirst({
-        where: {
-            id: userID,
-        }
-    });
-
-    //return the user's list of eventIDs
-    let events = user.calEvents;
-    //console.log("Authroutes Events: ------------------------\n", events);
-    res.json({events: events});
-
-});
-
-
-router.post('/addEventUsers', async(req, res) => {
-
-
-    //Adds the event to the "calEvents" db field on eahc of the declared users in userIDs
-    const { userIDs, eventID } = req.body;
-
-    try {
-
-        //Adds the eventID to the users' database entry
-        const updateUsers = await prisma.user.updateMany({
-            where: {
-                id: {in: userIDs }
-            },
-            data: { calEvents: {push: String(eventID)} },
-        });
-
-    } catch(err) {
-        console.log(err);
-    }
-});
-
-router.post('/updateEventUsers', async(req, res) => {
-
-    //Removes the eventID from each current user's "calEvents" field.
-    //Then adds it to each of the "newEventUsers" "calEvents" field.
-
-    //Not the most elegant solution, but it works!
-
-
-    var findEventID = req.body.eventID;
-    var curEventUsers = [ req.body.caregiver, req.body.patient];
-    var newEventUsers = [ req.body.newCaregiver, req.body.newPatient];
-
-    console.log("Cur Users Debug:", curEventUsers);
-    console.log("New Users Debug:", newEventUsers);
-
-    try {
-        //find users with the event currently, and remove them.
-        const foundUsers = await prisma.user.findMany({
-            where: {
-                fullName: {in: curEventUsers }
-            },
-        });
-
-
-        //console.log(findEventID);
-
-        function matchValue(testVal) {
-            return testVal != findEventID;
-        }
-
-        console.log(foundUsers);
-        for(var i = 0; i < foundUsers.length; i++)
-        {
-            var userEventList = foundUsers[i].calEvents;
-            var newEventsList = userEventList.filter(matchValue);
-
-            const updatedUsers = await prisma.user.updateMany({
-                where: {
-                    fullName: {in: curEventUsers }
-                },
-                data: { calEvents: newEventsList },
-            });
-
-            console.log(updatedUsers);
-        }
-
-        //Then next, add the event to the selected users.
-        const updateEventUsers = await prisma.user.updateMany({
-            where: {
-                fullName: {in: newEventUsers }
-            },
-            data: { calEvents: {push: String(findEventID)} },
-        });
-
-        console.log("Updated Users: ", updateEventUsers);
-
-
-    } catch(err) {
-        console.log(err);
-    }
-
-})
-
-router.post('/removeEventUser', async(req, res) => {
-
-    var findEventID = req.body.eventID;
-    var eventUsers = [ req.body.caregiver, req.body.patient];
-    var adminID = req.body.admin;
-    try {
-        //find users with the event currently.
-        var eventUsers = [ req.body.caregiver, req.body.patient];
-        const foundUsers = await prisma.user.findMany({
-            where: {
-                fullName: {in: eventUsers }
-            },
-        });
-
-        //Finds the admin entry, using the ID of the admin associated with deleting the event.
-        const foundAdmin = await prisma.user.findUnique({
-            where: {
-                id: adminID
-            },
-        });
-        //Adds them to the full list of event users found. (Caregiver, Patient, Admin)
-        //eventUsers.push(foundAdmin.fullName);
-        var fullArray = foundUsers.concat(foundAdmin);
-
-
-        //Debugging log
-        //console.log(findEventID);
-
-
-        //Function that matches anything that is NOT a match to the passed value (findEventID);
-        function matchValue(testVal) {
-            return testVal != findEventID;
-        }
-
-
-
-
-        //console.log(fullArray);
-        //Iterates through the list of associated users, filtering the eventsList to contain all events EXCEPT the one we're deleting, before passing the new array as an argument to replace the original array of events on each user DB entry.
-        for(var i = 0; i < fullArray.length; i++)
-        {
-            var userEventList = fullArray[i].calEvents;
-            var newEventsList = userEventList.filter(matchValue);
-
-            const updatedUsers = await prisma.user.updateMany({
-                where: {
-                    fullName: {in: eventUsers }
-                },
-                data: { calEvents: newEventsList },
-            });
-
-            console.log(updatedUsers[0].calEvents);
-        }
-    } catch(err) {
-        console.log(err);
-    }
-
-
-});
-
-router.post('/getName', async (req, res)=> {
-
-    const cookieToken = req.cookies.authcookie;
-    if(!cookieToken)
-    {
-        console.log("invalid cookie");
-        var name = "";
-        res.json({name: name}).send();
-    }
-    if(cookieToken)
-    {
-        let userID;
-        jwt.verify(cookieToken, process.env.JWT_SECRET, (err, user) => {
-            if(err) return console.log("Error or invalid cookie");
-            // req.user = user;
-            console.log("Authenticated with cookie as user: ", user);
-            userID = user.id;
-        });
-
-        const user = await prisma.user.findUnique({
-            where: {
-                id: userID
-            },
-        });
-
-        var name = user.fullName;
-        var role = user.role;
-        res.json({name: name, role: role}).send();
-    }
-
-
-});
-
-router.post('/updateUserRole', async(req, res) => {
-
-
-    const {userID, newRole} = req.body
-
-
-    const user = await prisma.user.update({
-        where: {
-            id: userID
-        },
-        data: { role: newRole}
-    });
-
-    res.sendStatus(201);
-
-});
-
-router.post('/deleteUser', async (req, res) => {
-
-    const { userID } = req.body;
-
-
-    const user = await prisma.user.delete({
-        where: {
-            id: userID
-        }
-    });
-
-    res.sendStatus(201);
-
-});
-
-
-
-
-router.post('/getUsersList', async (req, res) => {
-
-    //Verify user's cookie token before doing anything
-    const cookieToken = req.cookies.authcookie;
-    if(!cookieToken) console.log("invalid cookie");
-
-    let userID;
-    jwt.verify(cookieToken, process.env.JWT_SECRET, (err, user) => {
-        if(err) return console.log("Error or invalid cookie");
-        // req.user = user;
-        console.log("Authenticated with cookie as user: ", user);
-        userID = user.id;
-    });
-    //Check the role of the user associated with the cookie token
-    const user = await prisma.user.findUnique({
-        where: {
-            id: userID
-        },
-    });
-    if(user.role === "ADMIN")
-    {
-        var fullUserList = [];
-
-        const users = await prisma.user.findMany();
-
-        for(var i = 0; i < users.length; i++)
-        {
-            var name = users[i].fullName;
-            var role = users[i].role;
-            var id = users[i].id;
-            if(name !== null)
-            {
-                var curUser = [name, role, id];
-                fullUserList.push(curUser);
-            }
-        }
-        console.log(fullUserList);
-
-        res.json({userList: fullUserList}).send();
-    }
-
-});
-
-
-router.post('/getLocationData', async (req, res) => {
-
-    const { address } = req.body;
-
-    let response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${address}` ,
-        {
-            headers: { 'User-Agent': 'Because We Care Caregiving' },
-        }
-        );
-    const data = await response.json();
-    console.log(data);
-    res.json({pos: data}).send();
-
-
-
-});
-
-
-
-export default router;
+export default router

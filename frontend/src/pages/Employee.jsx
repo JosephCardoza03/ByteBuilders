@@ -4,14 +4,13 @@ import { useContext } from "react";
 import { UserContext } from "../contexts/UserContext";
 import {Link} from "react-router-dom";
 
-function Employee( {userRole} ) {
+function Employee() {
   const { users, userStates } = useContext(UserContext);
 
   return (
     <div className="employee-container">
       <h1>Employee Dashboard</h1>
 
-       {/*
       <div className="employee-user-section">
         <h3>Upcoming Clients</h3>
         <div className="user-tiles-container">
@@ -26,33 +25,24 @@ function Employee( {userRole} ) {
           ))}
         </div>
       </div>
-       */}
 
       <div className="tile-container">
         
-        {/*
         <Link to ="/checkin" className="tile-link">
           <button className="tile">
             Checkin
           </button>
         </Link>
 
-        <Link to ="/notes" className="tile-link">
-        <button className="tile">
-        Notes
-        </button>
-        </Link>
-        */}
-
-        <Link to ="/calendar" className="tile-link">
+        <Link to ="/schedule" className="tile-link">
           <button className="tile">
             Schedule
           </button>
         </Link>
 
-        <Link to ="/userManagement" className="tile-link">
+       <Link to ="/notes" className="tile-link">
           <button className="tile">
-            User Management
+            Notes
           </button>
         </Link>
       </div>
